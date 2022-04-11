@@ -1,13 +1,13 @@
 require('dotenv').config();
-express = require("express");
-bodyParser = require("body-parser");
-ejs = require("ejs");
-mongoose = require("mongoose");
-session = require('express-session');
-passport = require('passport');
-passportLocalMongoose = require('passport-local-mongoose');
-GoogleStrategy = require('passport-google-oauth20').Strategy;
-findOrCreate = require('mongoose-findorcreate');
+var express = require("express");
+var bodyParser = require("body-parser");
+var ejs = require("ejs");
+var mongoose = require("mongoose");
+var session = require('express-session');
+var passport = require('passport');
+var passportLocalMongoose = require('passport-local-mongoose');
+var GoogleStrategy = require('passport-google-oauth20').Strategy;
+var findOrCreate = require('mongoose-findorcreate');
 
 const app = express();
 
@@ -16,7 +16,7 @@ app.use(express.static("public"));
 app.set('view engine', 'ejs');
 
 app.use(session({
-  secret: "it is a smart key.",
+  secret: process.env.SECRET,
   resave: false,
   saveUninitialized:false
 }));
@@ -25,7 +25,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(passport.authenticate("session"));
 
-mongoose.connect("mongodb://localhost:27017/user2DB", {useNewUrlParser: true});
+mongoose.connect("mongodb://localhost:27017/userDB", {useNewUrlParser: true});
 
 const userSchema = new mongoose.Schema({
   email: String,
@@ -38,10 +38,10 @@ const userSchema = new mongoose.Schema({
 userSchema.plugin(passportLocalMongoose);
 userSchema.plugin(findOrCreate);
 
-const user2 = mongoose.model("user2", userSchema);
+const User = mongoose.model("user", userSchema);
 
 //for google sign-in
-passport.use(user2.createStrategy());
+passport.use(User.createStrategy());
 
 passport.serializeUser(function(user, cb) {
   process.nextTick(function() {
@@ -93,7 +93,7 @@ app.get("/register", function(req,res){
 });
 
 app.get("/secrets", function(req, res){
-  user2.find({"secret": {$ne: null}}, function(err, foundUsers){
+  User.find({"secret": {$ne: null}}, function(err, foundUsers){
     if (err){
       console.log(err);
     } else {
@@ -118,7 +118,7 @@ app.get("/logout", function(req, res){
 });
 
 app.post("/register", function(req,res){
-  user2.register({username: req.body.username, active: false}, req.body.password, function(err, user) {
+  User.register({username: req.body.username, active: false}, req.body.password, function(err, user) {
     if (err) {
       console.log(err);
       res.redirect("/register");
@@ -132,7 +132,7 @@ app.post("/register", function(req,res){
 
 app.post("/login", function(req, res){
 
-  const user = new user2({
+  const user = new User({
     username: req.body.username,
     password: req.body.password
   });
@@ -155,7 +155,7 @@ app.post("/submit", function(req, res){
   //right now passport.js has saved the user's info by session, check it by this:
   console.log(req.user.id);
 
-  user2.findById(req.user.id, function(err, foundUser){
+  User.findById(req.user.id, function(err, foundUser){
     if (err) {
       console.log(err);
     } else {
