@@ -30,8 +30,9 @@ mongoose.connect("mongodb://localhost:27017/user2DB", {useNewUrlParser: true});
 const userSchema = new mongoose.Schema({
   email: String,
   password: String,
-  googleId: String
+  googleId: String,
   //to store the profile from google
+  secret: String
 });
 
 userSchema.plugin(passportLocalMongoose);
@@ -92,11 +93,15 @@ app.get("/register", function(req,res){
 });
 
 app.get("/secrets", function(req, res){
-  if (req.isAuthenticated()){
-    res.render("secrets");
-  } else {
-    res.redirect("/login");
-  }
+  user2.find({"secret": {$ne: null}}, function(err, foundUsers){
+    if (err){
+      console.log(err);
+    } else {
+      if (foundUsers){
+        res.render("secrets", {userWithSecrets: foundUsers});
+      }
+    }
+  });
 });
 
 app.get("/submit", function(req, res) {
@@ -145,8 +150,25 @@ app.post("/login", function(req, res){
 });
 
 app.post("/submit", function(req, res){
+  const submittedSecret = req.body.secret;
 
-})；
+  //right now passport.js has saved the user's info by session, check it by this:
+  console.log(req.user.id);
+
+  user2.findById(req.user.id, function(err, foundUser){
+    if (err) {
+      console.log(err);
+    } else {
+      if (foundUser) {
+        //store the user's secret and redirect the user to see his/her secret:
+        foundUser.secret = submittedSecret;
+        foundUser.save(function(){
+          res.redirect("/secrets");
+        });
+      }
+    }
+  });
+});
 
 app.listen(3000, function(){
   console.log("The server is working on port 3000.");
