@@ -15,6 +15,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(express.static("public"));
 app.set('view engine', 'ejs');
 
+
 app.use(session({
   secret: process.env.SECRET,
   resave: false,
@@ -25,6 +26,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(passport.authenticate("session"));
 
+mongoose.set('strictQuery', true);
 mongoose.connect("mongodb://localhost:27017/userDB", {useNewUrlParser: true});
 
 const userSchema = new mongoose.Schema({
@@ -93,6 +95,7 @@ app.get("/register", function(req,res){
 });
 
 app.get("/secrets", function(req, res){
+  //find users who have submitted a secret and display it at the secrets page:
   User.find({"secret": {$ne: null}}, function(err, foundUsers){
     if (err){
       console.log(err);
